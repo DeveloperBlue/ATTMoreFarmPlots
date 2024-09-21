@@ -57,12 +57,6 @@ public class Plugin : BaseUnityPlugin
         float baseY = gardenPlotPrefab.transform.position.y;
         float baseZ = 62.0f;
 
-        // GardenManager gardenManager = gardenPlotBase.GetComponent<GardenManager>();
-        // if (gardenManager == null) {
-        //     Debug.LogError("Failed to find GardenManager on gardenPlotBase");
-        //     return;
-        // }
-
         GardenBed[] gardenBeds = gardenManager.gardenBeds;
 
         if (gardenBeds == null) {
@@ -84,6 +78,8 @@ public class Plugin : BaseUnityPlugin
         Vector3 firstPaintPosition = new Vector3();
         Vector3 lastPaintPosition = new Vector3();
 
+        Debug.Log($"Found {ctr} Garden Beds");
+
         for (int x = 0; x < numRows; x++) {
             for (int z = 0; z < numCols; z++) {
 
@@ -99,17 +95,23 @@ public class Plugin : BaseUnityPlugin
 
                 newGardenPlot.transform.position = new Vector3(baseX + (offsetDif * x), baseY, baseZ + (offsetDif * z));
 
-                NetworkObject networkObject = newGardenPlot.GetComponent<NetworkObject>();
+                NetworkObject oldNetworkObject = newGardenPlot.GetComponent<NetworkObject>();
 
-                if (networkObject == null) {
-                    Debug.LogError("Failed  to find NetworkObject component on newGardenPlot");
+                if (oldNetworkObject != null) {
+                    DestroyImmediate(oldNetworkObject);
                 }
 
-                if (networkObject != null) {
-                    networkObject.Spawn();
-                }
+                newGardenPlot.transform.SetParent(gardenPlotPrefab.transform.parent);
 
-                // newGardenPlot.transform.parent = gardenPlotPrefab.transform.parent.transform;
+                NetworkObject newNetworkObject = newGardenPlot.AddComponent<NetworkObject>();
+
+                if (newNetworkObject != null) {
+                    if (Master.Instance.HasConnectingClients() && AppSettingsManager.Instance.appSettings.system.useSpawnQueue) {
+                        Game.Instance.SpawnEnqueue(newNetworkObject);
+                    } else {
+                        newNetworkObject.Spawn();
+                    }
+                }
 
                 newGardenBeds[ctr] = newGardenBed;
                 ctr++;
@@ -141,6 +143,8 @@ public class Plugin : BaseUnityPlugin
 
     private static void DecorateFarmPlot_Temporary() {
 
+        // Clone lamp
+
         GameObject sourceLantern = GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/WallLamp/Props_Lantern");
 
         Vector3 lampPosition = new Vector3(-38, 1.78f, 69);
@@ -151,6 +155,20 @@ public class Plugin : BaseUnityPlugin
         cloneLantern.transform.parent = sourceLantern.transform.parent.parent;
 
         Debug.Log("Add little lantern to second farm plot");
+
+        // Remove 2 fences to make it look better
+
+        GameObject[] fences = [
+            GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/Fence_05"),
+            GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/Fence_06"),
+            GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/Fence_07"),
+        ];
+
+        for (int i = 0; i < fences.Length; i++) {
+            Destroy(fences[i]);
+        }
+
+        Debug.Log("Remove 2 fences to look better");
 
     }
     public static void DuplicateFence() {

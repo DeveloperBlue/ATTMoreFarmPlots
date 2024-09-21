@@ -2,10 +2,10 @@
 
 <p align="center">
   <img alt="shot from the second floor looking down" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/1.jpg" width="32%">
-&nbsp;
+    &nbsp;
   <img alt="shot from the base of the stairs looking up" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/2.jpg" width="32%">
   &nbsp;
-  <img alt="shot from the base of the stairs looking up" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/2.jpg" width="32%">
+  <img alt="shot from the base of the stairs looking up" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/3.jpg" width="32%">
 </p>
 
 ----
@@ -37,7 +37,9 @@ The only requirement for this mod is [BepInEx](https://thunderstore.io/c/ale-and
 
 *All clients must have the mod installed to see and use the new farm plots.*
 
-If you like the mod and the game remains popular, I can make the number of plots adjustable and synced with the host.
+## Uninstalling
+
+Trying to load your world up after uninstalling the mod may crash. This is because the game is trying to load the saved extra plots into slots that don't exist anymore. To fix this, you can open your save file up and delete the extra saved plots.
 
 ----
 
