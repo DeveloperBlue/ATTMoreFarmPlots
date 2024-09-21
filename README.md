@@ -1,11 +1,11 @@
 # More Farm Plots
 
 <p align="center">
-  <img alt="shot from the second floor looking down" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/1.jpg" width="32%">
-    &nbsp;
-  <img alt="shot from the base of the stairs looking up" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/2.jpg" width="32%">
+  <img alt="Extra farm plots" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/1.jpg" width="32%">
   &nbsp;
-  <img alt="shot from the base of the stairs looking up" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/3.jpg" width="32%">
+  <img alt="Extra farm plots (hoe'd and watered)" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/2.jpg" width="32%">
+  &nbsp;
+  <img alt="Extra farm plots (with crops)" src="https://raw.githubusercontent.com/DeveloperBlue/ATTMoreFarmPlots/refs/heads/main/previews/3.jpg" width="32%">
 </p>
 
 ----
