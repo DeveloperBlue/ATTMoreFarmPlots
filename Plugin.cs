@@ -1,4 +1,6 @@
-﻿using BepInEx;
+﻿using System;
+using System.Reflection;
+using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using Unity.Netcode;
@@ -31,121 +33,175 @@ public class Plugin : BaseUnityPlugin
             if (GardenManager.Instance != null) return;
             buildSecondFarmPlot(__instance);
         }
+
+        [HarmonyDebug]
+        [HarmonyPatch(typeof(GardenManager), "Awake")]
+        [HarmonyPostfix]
+        static void Postfix(GardenManager __instance) {
+
+            if (NetworkManager.Singleton.IsHost) {
+
+                MethodInfo LoadGameMethod = __instance.gardenBeds[0].GetType().GetMethod("LoadGame", BindingFlags.NonPublic | BindingFlags.Instance);
+                
+                for (int i = 15; i < __instance.gardenBeds.Length; i++) {
+
+                    Debug.Log($"[MORE FARM PLOTS] Calling LoadGame() for additional GardenBed {i} [Does Save Exist? {__instance.gardenBeds[i].savedGardenBed != null}]");
+
+                    LoadGameMethod.Invoke(__instance.gardenBeds[i], []);
+
+                }
+                
+            }
+
+        }
     }
+    
 
     private static void buildSecondFarmPlot(GardenManager gardenManager) {
 
-        Debug.Log("\n\nBuilding Second Farm Plot");
+        Debug.Log("\n\n[MORE FARM PLOTS] Building Second Farm Plot");
 
-        GameObject gardenPlotBase = GameObject.Find("Garden");
-        GameObject gardenPlotPrefab = GameObject.Find("Garden/Garden Bed Piece");
+        if (NetworkManager.Singleton.IsHost) {
 
-        if (gardenPlotBase == null) {
-            Debug.LogError("Failed to find gardenPlotBase");
-            return;
-        }
+            GameObject gardenPlotBase = GameObject.Find("Garden");
+            GameObject gardenPlotPrefab = GameObject.Find("Garden/Garden Bed Piece");
 
-        if (gardenPlotPrefab == null){
-            Debug.LogError("Failed to find gardenPlotPrefab");
-            return;
-        }
-
-
-        float offsetDif = 1.5f;
-
-        float baseX = -36.50f;
-        float baseY = gardenPlotPrefab.transform.position.y;
-        float baseZ = 62.0f;
-
-        GardenBed[] gardenBeds = gardenManager.gardenBeds;
-
-        if (gardenBeds == null) {
-            Debug.LogError("Failed to get gardenBeds field from gardenPlotBase gardenManager");
-            return;
-        }
-
-        int ctr = gardenBeds.Length;
-
-        int numRows = 3;
-        int numCols = 5;
-        
-        GardenBed[] newGardenBeds = new GardenBed[ctr + (numRows * numCols)];
-
-        for (int i = 0; i < ctr; i++) {
-            newGardenBeds[i] = gardenBeds[i];
-        }
-
-        Vector3 firstPaintPosition = new Vector3();
-        Vector3 lastPaintPosition = new Vector3();
-
-        Debug.Log($"Found {ctr} Garden Beds");
-
-        for (int x = 0; x < numRows; x++) {
-            for (int z = 0; z < numCols; z++) {
-
-                Debug.Log($"Creating Additional Garden Plot ({x},{z}) [{ctr}]");
-                GameObject newGardenPlot = Instantiate(gardenPlotPrefab);
-                newGardenPlot.name = $"Garden Bed Piece_{ctr}";
-
-                GardenBed newGardenBed = newGardenPlot.GetComponent<GardenBed>();
-
-                if (newGardenBed == null) {
-                    Debug.LogError("Failed  to find GardenBed component on newGardenPlot");
-                }
-
-                newGardenPlot.transform.position = new Vector3(baseX + (offsetDif * x), baseY, baseZ + (offsetDif * z));
-
-                NetworkObject oldNetworkObject = newGardenPlot.GetComponent<NetworkObject>();
-
-                if (oldNetworkObject != null) {
-                    DestroyImmediate(oldNetworkObject);
-                }
-
-                newGardenPlot.transform.SetParent(gardenPlotPrefab.transform.parent);
-
-                NetworkObject newNetworkObject = newGardenPlot.AddComponent<NetworkObject>();
-
-                if (newNetworkObject != null) {
-                    if (Master.Instance.HasConnectingClients() && AppSettingsManager.Instance.appSettings.system.useSpawnQueue) {
-                        Game.Instance.SpawnEnqueue(newNetworkObject);
-                    } else {
-                        newNetworkObject.Spawn();
-                    }
-                }
-
-                newGardenBeds[ctr] = newGardenBed;
-                ctr++;
-
-                if (x == 0 && z == 0) {
-                    firstPaintPosition = newGardenPlot.transform.position;
-                } else if (x == numRows - 1 && z == numCols - 1) {
-                    lastPaintPosition = newGardenPlot.transform.position;
-                }
-
+            if (gardenPlotBase == null) {
+                Debug.LogError("[MORE FARM PLOTS] Failed to find gardenPlotBase at Garden");
+                return;
             }
+
+            if (gardenPlotPrefab == null){
+                Debug.LogError("[MORE FARM PLOTS] Failed to find gardenPlotPrefab at Garden/Garden Bed Piece");
+                return;
+            }
+
+
+            float offsetDif = 1.5f;
+
+            float baseX = -36.50f;
+            float baseY = gardenPlotPrefab.transform.position.y;
+            float baseZ = 62.0f;
+
+            if (gardenManager.gardenBeds == null) {
+                Debug.LogError("[MORE FARM PLOTS] GardenManager gardenBeds failed to load on time");
+                return;
+            }
+
+            GardenBed[] gardenBeds = gardenManager.gardenBeds;
+
+            if (gardenBeds == null) {
+                Debug.LogError("[MORE FARM PLOTS] Failed to get gardenBeds field from gardenPlotBase gardenManager");
+                return;
+            }
+
+            int ctr = gardenBeds.Length;
+
+            int numRows = 3;
+            int numCols = 5;
+            
+            Debug.Log("[MORE FARM PLOTS] Creating new list for more garden beds");
+
+            GardenBed[] newGardenBeds = new GardenBed[ctr + (numRows * numCols)];
+
+            for (int i = 0; i < ctr; i++) {
+                newGardenBeds[i] = gardenBeds[i];
+            }
+
+            Vector3 firstPaintPosition = new Vector3(0, 0, 0);
+            Vector3 lastPaintPosition = new Vector3(0, 0, 0);
+
+            if (NetworkManager.Singleton == null){
+                Debug.LogError("[MORE FARM PLOTS] NetworkManager is not ready");
+                return;
+            }
+
+            GameObject gameObjectWithNetworkObjecToHijack = GameObject.Find("Game");
+            GameObject gardenPlotTwo = gameObjectWithNetworkObjecToHijack; // new GameObject("Garden_MoreFarmPlots");
+            // gardenPlotTwo.transform.SetParent(gameObjectWithNetworkObjecToHijack.transform);
+
+            // Debug.Log("[MORE FARM PLOTS] Adding Network Object");
+            // NetworkObject baseNetworkObject = gardenPlotTwo.AddComponent<NetworkObject>();
+
+            NetworkObject baseNetworkObject = gardenPlotTwo.GetComponent<NetworkObject>();
+
+            Debug.Log($"[MORE FARM PLOTS] Found {ctr} Garden Beds");
+
+            gardenPlotPrefab.SetActive(false);
+
+            for (int x = 0; x < numRows; x++) {
+                for (int z = 0; z < numCols; z++) {
+
+                    Debug.Log($"[MORE FARM PLOTS] Creating Additional Garden Plot ({x},{z}) [{ctr}]");
+                    GameObject newGardenPlot = Instantiate(gardenPlotPrefab);
+                    newGardenPlot.SetActive(false);
+
+                    Debug.Log("Removing duplicate NetworkObject");
+                    NetworkObject oldNetworkObject = newGardenPlot.GetComponent<NetworkObject>();
+                    if (oldNetworkObject != null) {
+                        DestroyImmediate(oldNetworkObject);
+                    }
+
+                    newGardenPlot.name = $"Garden Bed Piece_{ctr}";
+                    newGardenPlot.transform.SetParent(gardenPlotTwo.transform);
+                    newGardenPlot.transform.position = new Vector3(baseX + (offsetDif * x), baseY, baseZ + (offsetDif * z));
+
+                    GardenBed newGardenBed = newGardenPlot.GetComponent<GardenBed>();
+
+                    if (newGardenBed == null) {
+                        Debug.LogError($"[MORE FARM PLOTS] Failed to find GardenBed component on newGardenPlot [{ctr}]");
+                    }
+
+                    newGardenPlot.SetActive(true);
+
+                    newGardenBeds[ctr] = newGardenBed;
+                    ctr++;
+
+                    if (x == 0 && z == 0) {
+                        firstPaintPosition = newGardenPlot.transform.position;
+                    } else if (x == numRows - 1 && z == numCols - 1) {
+                        lastPaintPosition = newGardenPlot.transform.position;
+                    }
+
+                }
+            }
+            
+            gardenPlotPrefab.SetActive(true);
+
+            if (Master.Instance.HasConnectingClients() && AppSettingsManager.Instance.appSettings.system.useSpawnQueue) {
+                Game.Instance.SpawnEnqueue(baseNetworkObject);
+            } else {
+                baseNetworkObject.Spawn();
+            }
+
+            Debug.Log("[MORE FARM PLOTS] Adding new gardenBeds to gardenManager");
+
+            // gardenManager.gardenBeds = newGardenBeds;
+
+            Debug.Log("[MORE FARM PLOTS] Finished creating additional garden plots");
+
+            ModifyTerrain(gardenPlotPrefab.transform.position, firstPaintPosition, lastPaintPosition);
+
         }
 
-        gardenManager.gardenBeds = newGardenBeds;
-
-        Debug.Log("Finished creating additional garden plots");
-
-        ModifyTerrain(gardenPlotPrefab.transform.position, firstPaintPosition, lastPaintPosition);
         
         // The DuplicateFence() function is disabled because the meshes are statically baked.
         // Any fence clones can't be moved. It just results in invisible hitboxes. Unfortunate.
         // DuplicateFence();
 
         // We'll just place a lamp on the ground instead.
-        DecorateFarmPlot_Temporary();
+        ModifyFarmFences();
 
     }
 
 
-    private static void DecorateFarmPlot_Temporary() {
+    private static void ModifyFarmFences() {
 
         // Clone lamp
 
         GameObject sourceLantern = GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/WallLamp/Props_Lantern");
+
+        Debug.Log("[MORE FARM PLOTS] Modify Farm Fence Area");
 
         Vector3 lampPosition = new Vector3(-38, 1.78f, 69);
 
@@ -154,8 +210,12 @@ public class Plugin : BaseUnityPlugin
         cloneLantern.transform.position = lampPosition;
         cloneLantern.transform.parent = sourceLantern.transform.parent.parent;
 
-        Debug.Log("Add little lantern to second farm plot");
+        // GameObject lampLightObject = GameObject.Find("Terrain/Terrain Props/Not walkable/Near Tavern/Fences/WallLamp/MoreFarmPlotsLantern/Point Light_1");
+        // lampLightObject.SetActive(true);
 
+        // Light lampLightComponent = lampLightObject.GetComponent<Light>();
+
+        // lampLightObject.transform.localPosition = new Vector3(0, 3.90f, 0);
         // Remove 2 fences to make it look better
 
         GameObject[] fences = [
@@ -167,8 +227,6 @@ public class Plugin : BaseUnityPlugin
         for (int i = 0; i < fences.Length; i++) {
             Destroy(fences[i]);
         }
-
-        Debug.Log("Remove 2 fences to look better");
 
     }
     public static void DuplicateFence() {
@@ -190,8 +248,6 @@ public class Plugin : BaseUnityPlugin
         Vector3 pos2 = fenceOrigins[7].transform.position;
         Vector3 offset = new Vector3(pos1.x - pos2.x, 0, pos1.z - pos2.z);
 
-        Debug.Log($"Spacing {offset}");
-
         for (int i = 0; i < fenceOrigins.Length; i++) {
 
             /* Clone all children and modify their MeshRenderer bounds m_center */
@@ -204,13 +260,14 @@ public class Plugin : BaseUnityPlugin
 
         }
 
-        Debug.Log("Duplicated Fence");
     }
 
     public static void ModifyTerrain(Vector3 prefabPosition, Vector3 firstCorner, Vector3 secondCorner) {
 
         GameObject terrainGameObject = GameObject.Find("Terrain/Terrain");
         Terrain terrain = terrainGameObject.GetComponent<Terrain>();
+
+        Debug.Log("[MORE FARM PLOTS] Modifying Terrain under new farm plots");
 
         TerrainData terrainData = terrain.terrainData;
         Vector3 terrainSize = terrainData.size;

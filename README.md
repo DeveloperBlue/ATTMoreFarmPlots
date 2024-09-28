@@ -10,6 +10,10 @@
 
 ----
 
+> [!CAUTION]
+> THIS MOD DOES NOT WORK.
+> Unfortunately, this mod does not work. If you're an experienced Unity developer/modder with some tips, please see the <b>Issues With Development / Help Me</b> section below.
+
 Adds another set of farm plots next to the original farm behind the tavern.
 
 Works in multiplayer (All clients must have the mod installed to see and use the farm).
@@ -40,6 +44,17 @@ The only requirement for this mod is [BepInEx](https://thunderstore.io/c/ale-and
 ## Uninstalling
 
 Trying to load your world up after uninstalling the mod may crash. This is because the game is trying to load the saved extra plots into slots that don't exist anymore. To fix this, you can open your save file up and delete the extra saved plots.
+
+## Issues With Development / Help Me
+I'm having some issues with this mod. Each individial farm plot has a NetworkObject and NetworkBehavior component on them. I am familiar with one NetworkObject in the parent, and the children entities (plots) each having a NetworkBehavior.
+
+I tried just cloning the plots and calling .Spawn() on their NetworkObjects, but because they share the same IDs as the source they are cloned from, Unity doesn't like that.
+
+I tried RemoveImmedidate() on the existing NetworkObjects and creating new NetworkObject components, and then calling .Spawn() on the new NetworkObjects, but that didn't seem to work either.
+
+I tried creating a new parent GameObject with a new NetworkObject, and adding the farm plot instances as children (with original NetworkObjects removed), and that still didn't seem to work.
+
+Frankly, I am just getting issues trying to create a new NetworkObject at runtime. I'm also not sure if calling RemoveImmediate() on existing NetworkObjects messes with the NetworkBehaviors that expect the NetworkObject to exist (but in the runtime inspector, they seem to link to any new NetworkObjects fine, so that might not be an issue.)
 
 ----
 
